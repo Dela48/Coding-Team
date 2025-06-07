@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Group Three Calculator</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style></style>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="calculator-container">
+      <div class="calculator-header">
+        <div class="calculator-title">Group Three Calculator</div>
+        <button class="theme-toggle" id="theme-toggle">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+
+      <div class="display">
+        <div class="memory-indicator" id="memory-indicator"></div>
+        <div class="previous-operand" id="previous-operand"></div>
+        <div class="current-operand" id="current-operand">0</div>
+      </div>
+
+      <div class="buttons-grid">
+        <button class="memory-btn" data-action="memory-clear">MC</button>
+        <button class="memory-btn" data-action="memory-recall">MR</button>
+        <button class="memory-btn" data-action="memory-add">M+</button>
+        <button class="memory-btn" data-action="memory-subtract">M-</button>
+
+        <button class="ac operator" data-action="clear">AC</button>
+        <button class="del operator" data-action="delete">DEL</button>
+        <button class="operator" data-operation="%">%</button>
+        <button class="operator" data-operation="/">÷</button>
+
+        <button data-number="7">7</button>
+        <button data-number="8">8</button>
+        <button data-number="9">9</button>
+        <button class="operator" data-operation="*">×</button>
+
+        <button data-number="4">4</button>
+        <button data-number="5">5</button>
+        <button data-number="6">6</button>
+        <button class="operator" data-operation="-">−</button>
+
+        <button data-number="1">1</button>
+        <button data-number="2">2</button>
+        <button data-number="3">3</button>
+        <button class="operator" data-operation="+">+</button>
+
+        <button class="zero" data-number="0">0</button>
+        <button data-number=".">.</button>
+        <button class="operator equals" data-action="calculate">=</button>
+      </div>
+
+      <div class="footer">Group Three Calculator &copy; 2025</div>
+    </div>
+
+    <script>
+      // Calculator logic
+      class Calculator {
+        constructor(
+          previousOperandElement,
+          currentOperandElement,
+          memoryIndicator
+        ) {
+          this.previousOperandElement = previousOperandElement;
+          this.currentOperandElement = currentOperandElement;
+          this.memoryIndicator = memoryIndicator;
+          this.memory = 0;
+          this.clear();
+        }
+
+        clear() {
+          this.currentOperand = "0";
+          this.previousOperand = "";
+          this.operation = undefined;
+        }
+
+        delete() {
+          this.currentOperand = this.currentOperand.toString().slice(0, -1);
+          if (this.currentOperand === "") {
+            this.currentOperand = "0";
+          }
+        }
+
+        appendNumber(number) {
+          if (number === "." && this.currentOperand.includes(".")) return;
+          if (this.currentOperand === "0" && number !== ".") {
+            this.currentOperand = number.toString();
+          } else {
+            this.currentOperand =
+              this.currentOperand.toString() + number.toString();
+          }
+        }
+
+        chooseOperation(operation) {
+          if (this.currentOperand === "") return;
+          if (this.previousOperand !== "") {
+            this.calculate();
+          }
+          this.operation = operation;
+          this.previousOperand = this.currentOperand;
+          this.currentOperand = "";
+        }
+
+        calculate() {
+          let computation;
+          const prev = parseFloat(this.previousOperand);
+          const current = parseFloat(this.currentOperand);
+          if (isNaN(prev) || isNaN(current)) return;
+
+          switch (this.operation) {
+            case "+":
+              computation = prev + current;
+              break;
+            case "-":
+              computation = prev - current;
+              break;
+            case "*":
+              computation = prev * current;
+              break;
+            case "/":
+              if (current === 0) {
+                computation = "Error: Div by 0";
+              } else {
+                computation = prev / current;
+              }
+              break;
+            case "%":
+              computation = prev % current;
+              break;
+            default:
+              return;
+          }
+
+          // Handle error case
+          if (typeof computation === "string") {
+            this.currentOperand = computation;
+          } else {
+            // Round to avoid floating point precision issues
+            computation = Math.round(computation * 1000000) / 1000000;
+            this.currentOperand = computation.toString();
+          }
+
+          this.operation = undefined;
+          this.previousOperand = "";
+        }
+
+        // Memory functions
+        memoryClear() {
+          this.memory = 0;
+          this.updateMemoryIndicator();
+        }
+
+        memoryRecall() {
+          if (this.currentOperand === "0" || this.operation) {
+            this.currentOperand = this.memory.toString();
+          } else {
+            this.currentOperand += this.memory.toString();
+          }
+        }
+
+        memoryAdd() {
+          const current = parseFloat(this.currentOperand);
+          if (!isNaN(current)) {
+            this.memory += current;
+            this.updateMemoryIndicator();
+          }
+        }
+
+        memorySubtract() {
+          const current = parseFloat(this.currentOperand);
+          if (!isNaN(current)) {
+            this.memory -= current;
+            this.updateMemoryIndicator();
+          }
+        }
+
+        updateMemoryIndicator() {
+          this.memoryIndicator.textContent = this.memory !== 0 ? "M" : "";
+        }
+
+        updateDisplay() {
+          this.currentOperandElement.innerText = this.getDisplayNumber(
+            this.currentOperand
+          );
+          if (this.operation != null) {
+            this.previousOperandElement.innerText = `${this.getDisplayNumber(
+              this.previousOperand
+            )} ${this.operation}`;
+          } else {
+            this.previousOperandElement.innerText = "";
+          }
+        }
+
+        getDisplayNumber(number) {
+          if (number === "") return "";
+          if (typeof number === "string" && number.startsWith("Error"))
+            return number;
+
+          const stringNumber = number.toString();
+          const integerDigits = parseFloat(stringNumber.split(".")[0]);
+          const decimalDigits = stringNumber.split(".")[1];
+          let integerDisplay;
+
+          if (isNaN(integerDigits)) {
+            integerDisplay = "";
+          } else {
+            integerDisplay = integerDigits.toLocaleString("en", {
+              maximumFractionDigits: 0,
+            });
+          }
+
+          if (decimalDigits != null) {
+            return `${integerDisplay}.${decimalDigits}`;
+          } else {
+            return integerDisplay;
+          }
+        }
+      }
+
+      // DOM Elements
+      const numberButtons = document.querySelectorAll("[data-number]");
+      const operationButtons = document.querySelectorAll("[data-operation]");
+      const equalsButton = document.querySelector('[data-action="calculate"]');
+      const deleteButton = document.querySelector('[data-action="delete"]');
+      const allClearButton = document.querySelector('[data-action="clear"]');
+      const previousOperandElement =
+        document.getElementById("previous-operand");
+      const currentOperandElement = document.getElementById("current-operand");
+      const memoryIndicator = document.getElementById("memory-indicator");
+      const themeToggle = document.getElementById("theme-toggle");
+      const memoryButtons = document.querySelectorAll(".memory-btn");
+
+      // Initialize calculator
+      const calculator = new Calculator(
+        previousOperandElement,
+        currentOperandElement,
+        memoryIndicator
+      );
+
+      // Event listeners
+      numberButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          calculator.appendNumber(button.innerText);
+          calculator.updateDisplay();
+        });
+      });
+
+      operationButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          calculator.chooseOperation(button.innerText);
+          calculator.updateDisplay();
+        });
+      });
+
+      equalsButton.addEventListener("click", () => {
+        calculator.calculate();
+        calculator.updateDisplay();
+      });
+
+      allClearButton.addEventListener("click", () => {
+        calculator.clear();
+        calculator.updateDisplay();
+      });
+
+      deleteButton.addEventListener("click", () => {
+        calculator.delete();
+        calculator.updateDisplay();
+      });
+
+      // Memory buttons
+      memoryButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.getAttribute("data-action");
+          switch (action) {
+            case "memory-clear":
+              calculator.memoryClear();
+              break;
+            case "memory-recall":
+              calculator.memoryRecall();
+              calculator.updateDisplay();
+              break;
+            case "memory-add":
+              calculator.memoryAdd();
+              break;
+            case "memory-subtract":
+              calculator.memorySubtract();
+              break;
+          }
+        });
+      });
+
+      // Theme toggle
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark-theme");
+        const icon = themeToggle.querySelector("i");
+        if (document.body.classList.contains("dark-theme")) {
+          icon.classList.remove("fa-moon");
+          icon.classList.add("fa-sun");
+        } else {
+          icon.classList.remove("fa-sun");
+          icon.classList.add("fa-moon");
+        }
+      });
+
+      // Keyboard support
+      document.addEventListener("keydown", (event) => {
+        if (event.key >= 0 && event.key <= 9) {
+          calculator.appendNumber(event.key);
+          calculator.updateDisplay();
+        }
+        if (event.key === ".") {
+          calculator.appendNumber(".");
+          calculator.updateDisplay();
+        }
+        if (
+          event.key === "+" ||
+          event.key === "-" ||
+          event.key === "*" ||
+          event.key === "/" ||
+          event.key === "%"
+        ) {
+          calculator.chooseOperation(event.key);
+          calculator.updateDisplay();
+        }
+        if (event.key === "Enter" || event.key === "=") {
+          calculator.calculate();
+          calculator.updateDisplay();
+        }
+        if (event.key === "Backspace") {
+          calculator.delete();
+          calculator.updateDisplay();
+        }
+        if (event.key === "Escape") {
+          calculator.clear();
+          calculator.updateDisplay();
+        }
+        // Memory functions
+        if (event.key === "m" || event.key === "M") {
+          calculator.memoryAdd();
+        }
+        if (event.key === "r" || event.key === "R") {
+          calculator.memoryRecall();
+          calculator.updateDisplay();
+        }
+        if (event.key === "c" || event.key === "C") {
+          calculator.memoryClear();
+        }
+      });
+    </script>
+  </body>
+</html>
